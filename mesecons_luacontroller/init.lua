@@ -33,8 +33,20 @@ rules.d = {x =  0, y = 0, z = -1, name="D"}
 
 function lc_update_real_portstates(pos, rulename, newstate)
 	local meta = minetest.get_meta(pos)
-	local port = ({"D", "A", nil, "C", "B"})[rulename.x+2*rulename.z+3]
-	meta:set_string("real_port_"..port, newstate)
+	if rulename == nil then
+		meta:set_string("real_port_A", "off")
+		meta:set_string("real_port_B", "off")
+		meta:set_string("real_port_C", "off")
+		meta:set_string("real_port_D", "off")
+	elseif rulename.x == nil then
+		for _, rname in ipairs(rulename) do
+			local port = ({"D", "A", nil, "C", "B"})[rname.x+2*rname.z+3]
+			meta:set_string("real_port_"..port, newstate)
+		end
+	else
+		local port = ({"D", "A", nil, "C", "B"})[rulename.x+2*rulename.z+3]
+		meta:set_string("real_port_"..port, newstate)
+	end
 end
 
 local get_real_portstates = function(pos) -- determine if ports are powered (by itself or from outside)
