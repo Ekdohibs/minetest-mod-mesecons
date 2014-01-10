@@ -31,18 +31,57 @@ rules.d = {x =  0, y = 0, z = -1, name="D"}
 ------------------
 -- These helpers are required to set the portstates of the luacontroller
 
+function lc_update_real_portstates(pos, rulename, newstate)
+	local meta = minetest.get_meta(pos)
+	local port = ({"D", "A", nil, "C", "B"})[rulename.x+2*rulename.z+3]
+	meta:set_string("real_port_"..port, newstate)
+end
+
 local get_real_portstates = function(pos) -- determine if ports are powered (by itself or from outside)
-	ports = {
-		a = mesecon:is_power_on(mesecon:addPosRule(pos, rules.a), mesecon:invertRule(rules.a))
-			and mesecon:rules_link(mesecon:addPosRule(pos, rules.a), pos),
-		b = mesecon:is_power_on(mesecon:addPosRule(pos, rules.b), mesecon:invertRule(rules.b))
-			and mesecon:rules_link(mesecon:addPosRule(pos, rules.b), pos),
-		c = mesecon:is_power_on(mesecon:addPosRule(pos, rules.c), mesecon:invertRule(rules.c))
-			and mesecon:rules_link(mesecon:addPosRule(pos, rules.c), pos),
-		d = mesecon:is_power_on(mesecon:addPosRule(pos, rules.d), mesecon:invertRule(rules.d))
-			and mesecon:rules_link(mesecon:addPosRule(pos, rules.d), pos),
+	local meta = minetest.get_meta(pos)
+	local L = {
+		a = meta:get_string("real_port_A") == "on",
+		b = meta:get_string("real_port_B") == "on",
+		c = meta:get_string("real_port_C") == "on",
+		d = meta:get_string("real_port_D") == "on",
 	}
-	return ports
+	if meta:get_string("real_port_A") == "" then -- Old code, remove later
+		L = {
+			a = mesecon:is_power_on(mesecon:addPosRule(pos, rules.a),
+				mesecon:invertRule(rules.a)) and
+				mesecon:rules_link(mesecon:addPosRule(pos, rules.a), pos),
+			b = mesecon:is_power_on(mesecon:addPosRule(pos, rules.b),
+				mesecon:invertRule(rules.b)) and
+				mesecon:rules_link(mesecon:addPosRule(pos, rules.b), pos),
+			c = mesecon:is_power_on(mesecon:addPosRule(pos, rules.c),
+				mesecon:invertRule(rules.c)) and
+				mesecon:rules_link(mesecon:addPosRule(pos, rules.c), pos),
+			d = mesecon:is_power_on(mesecon:addPosRule(pos, rules.d),
+				mesecon:invertRule(rules.d)) and
+				mesecon:rules_link(mesecon:addPosRule(pos, rules.d), pos),
+		}
+		if L.a then
+			meta:set_string("real_port_A", "on")
+		else
+			meta:set_string("real_port_A", "off")
+		end
+		if L.b then
+			meta:set_string("real_port_B", "on")
+		else
+			meta:set_string("real_port_B", "off")
+		end
+		if L.c then
+			meta:set_string("real_port_C", "on")
+		else
+			meta:set_string("real_port_C", "off")
+		end
+		if L.d then
+			meta:set_string("real_port_D", "on")
+		else
+			meta:set_string("real_port_D", "off")
+		end
+	end
+	return L
 end
 
 local merge_portstates = function (ports, vports)
@@ -457,6 +496,7 @@ local mesecons = {
 	{
 		rules = input_rules[cid],
 		action_change = function (pos, _, rulename, newstate)
+			lc_update_real_portstates(pos, rulename, newstate)
 			lc_update(pos, {type=newstate,  pin=rulename})
 		end,
 	},

@@ -39,7 +39,8 @@ mesecon:add_rules(nodename, rules)
 local mesecons = {effector =
 {
 	rules = input_rules,
-	action_change = function (pos, node, rulename)
+	action_change = function (pos, node, rulename, newstate)
+		yc_update_real_portstates(pos, node, rulename, newstate)
 		update_yc(pos)
 	end
 }}
@@ -633,25 +634,60 @@ function yc_set_portstate(port, state, L)
 	return L
 end
 
+function yc_update_real_portstates(pos, node, rulename, newstate)
+	local meta = minetest.get_meta(pos)
+	local port = ({"D", "A", nil, "C", "B"})[rulename.x+2*rulename.z+3]
+	meta:set_string("real_port_"..port, newstate)
+end
+
 function yc_get_real_portstates(pos) -- port powered or not (by itself or from outside)?
-	rulesA = mesecon:get_rules("mesecons_microcontroller:microcontroller0001")
-	rulesB = mesecon:get_rules("mesecons_microcontroller:microcontroller0010")
-	rulesC = mesecon:get_rules("mesecons_microcontroller:microcontroller0100")
-	rulesD = mesecon:get_rules("mesecons_microcontroller:microcontroller1000")
-	L = {
-		a = mesecon:is_power_on(mesecon:addPosRule(pos, rulesA[1]),
-			mesecon:invertRule(rulesA[1])) and
-			mesecon:rules_link(mesecon:addPosRule(pos, rulesA[1]), pos),
-		b = mesecon:is_power_on(mesecon:addPosRule(pos, rulesB[1]),
-			mesecon:invertRule(rulesB[1])) and
-			mesecon:rules_link(mesecon:addPosRule(pos, rulesB[1]), pos),
-		c = mesecon:is_power_on(mesecon:addPosRule(pos, rulesC[1]),
-			mesecon:invertRule(rulesC[1])) and
-			mesecon:rules_link(mesecon:addPosRule(pos, rulesC[1]), pos),
-		d = mesecon:is_power_on(mesecon:addPosRule(pos, rulesD[1]),
-			mesecon:invertRule(rulesD[1])) and
-			mesecon:rules_link(mesecon:addPosRule(pos, rulesD[1]), pos),
+	local meta = minetest.get_meta(pos)
+	local L = {
+		a = meta:get_string("real_port_A") == "on",
+		b = meta:get_string("real_port_B") == "on",
+		c = meta:get_string("real_port_C") == "on",
+		d = meta:get_string("real_port_D") == "on",
 	}
+	if meta:get_string("real_port_A") == "" then -- Old code, remove later
+		rulesA = mesecon:get_rules("mesecons_microcontroller:microcontroller0001")
+		rulesB = mesecon:get_rules("mesecons_microcontroller:microcontroller0010")
+		rulesC = mesecon:get_rules("mesecons_microcontroller:microcontroller0100")
+		rulesD = mesecon:get_rules("mesecons_microcontroller:microcontroller1000")
+		L = {
+			a = mesecon:is_power_on(mesecon:addPosRule(pos, rulesA[1]),
+				mesecon:invertRule(rulesA[1])) and
+				mesecon:rules_link(mesecon:addPosRule(pos, rulesA[1]), pos),
+			b = mesecon:is_power_on(mesecon:addPosRule(pos, rulesB[1]),
+				mesecon:invertRule(rulesB[1])) and
+				mesecon:rules_link(mesecon:addPosRule(pos, rulesB[1]), pos),
+			c = mesecon:is_power_on(mesecon:addPosRule(pos, rulesC[1]),
+				mesecon:invertRule(rulesC[1])) and
+				mesecon:rules_link(mesecon:addPosRule(pos, rulesC[1]), pos),
+			d = mesecon:is_power_on(mesecon:addPosRule(pos, rulesD[1]),
+				mesecon:invertRule(rulesD[1])) and
+				mesecon:rules_link(mesecon:addPosRule(pos, rulesD[1]), pos),
+		}
+		if L.a then
+			meta:set_string("real_port_A", "on")
+		else
+			meta:set_string("real_port_A", "off")
+		end
+		if L.b then
+			meta:set_string("real_port_B", "on")
+		else
+			meta:set_string("real_port_B", "off")
+		end
+		if L.c then
+			meta:set_string("real_port_C", "on")
+		else
+			meta:set_string("real_port_C", "off")
+		end
+		if L.d then
+			meta:set_string("real_port_D", "on")
+		else
+			meta:set_string("real_port_D", "off")
+		end
+	end
 	return L
 end
 
